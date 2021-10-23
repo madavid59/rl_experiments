@@ -1,7 +1,8 @@
 import gym
 import numpy as np
 import tensorflow as tf
-np.random.seed(1)
+import matplotlib.pyplot as plt
+np.random.seed(2)
 
 class QTableAgent:
     def __init__(self, env, lr = 0.8, discount = 0.95, n_episodes = 2000):
@@ -11,14 +12,15 @@ class QTableAgent:
         self.env = env
         # Initialize Q-Table with zeros
         self.Q = np.zeros([self.env.observation_space.n, self.env.action_space.n])
+        self.rewards = np.zeros(self.n_episodes)
     
 
     def train(self):
 
+        
         for k in range(self.n_episodes):
             # Epsilon decays --> RM-Conditions
-            epsilon = self.n_episodes / 10.0 / float(k + 1)
-
+            epsilon = self.n_episodes / 100 / float(k + 1)
             s = env.reset()
             is_done = False
             while not is_done:
@@ -36,6 +38,21 @@ class QTableAgent:
 
                 # Update state
                 s = s_next
+
+            self.rewards[k] = reward
+
+    def plot_moving_average(self, win_size=40):
+        fig, ax = plt.subplots(nrows=2, ncols=1)
+        k = np.arange(start=0, stop = self.n_episodes)
+        ax[0].plot(k, self.rewards)
+        ax[0].set_xlabel("Episode")
+        ax[0].set_ylabel("Reward")
+
+        ma = np.convolve(self.rewards, np.ones(win_size) / win_size, mode='same')
+        ax[1].plot(k, ma)
+        ax[1].set_xlabel("Episode")
+        ax[1].set_ylabel("Moving average reward (k={})".format(win_size))
+        plt.show()
 
 
     def play(self):
@@ -75,7 +92,11 @@ if __name__=='__main__':
     env = gym.make('FrozenLake-v1', is_slippery = True)
 
     # Train Q-Table
-    agent = QTableAgent(env, lr = 0.8, discount=0.95, n_episodes=1000)
+    # A note on hyper parameter selection
+    # learning rate is chosen low, because the problem is stochastic. Thus, we don't want noise
+    # to mess up our value function too badly.
+    agent = QTableAgent(env, lr = 0.1, discount=0.95, n_episodes=10000)
     agent.train()
+    agent.plot_moving_average(win_size=20)
     agent.print_policy()
-    agent.play()
+    #agent.play()
