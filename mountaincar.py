@@ -19,6 +19,8 @@ class QNetwork(tf.keras.Model):
 
         self.l_out = layers.Dense(n_actions, activation='linear')
 
+        self.optimizer = tf.optimizers.SGD(0.01)
+
     @tf.function
     def call(self, inputs):
         x = self.l_in(inputs)
@@ -26,6 +28,16 @@ class QNetwork(tf.keras.Model):
             x = layer(x)
         return self.l_out(x)
 
+    @tf.function
+    def train(self, y_target, s_batch, a_batch):
+        with tf.GradientTape() as tape:
+            q_policy = tf.reduce_sum(self(s_batch) * tf.one_hot(a_batch, env.action_space.n), 1)
+            loss = tf.math.reduce_mean(tf.square(y_target - q_policy))
+
+        # Update weights
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        return loss
 
 
 class Memory:
@@ -99,10 +111,9 @@ class DQNActor:
         self.copy_interval = 25
         self.q_policy = QNetwork(env)
         self.q_target = QNetwork(env)
-        self.optimizer = tf.optimizers.SGD(0.01)
 
         # Visualization every x episodes
-        self.vis_interval = 10
+        self.vis_interval = 100
 
     def get_epsilon(self, k: int):
         """ Get current exploration coefficient.
@@ -191,17 +202,11 @@ class DQNActor:
                     # Compute estimated q-function (bootstrapping)
                     q_target = self.q_target(s_n_batch)
                     q_target_max = tf.math.reduce_max(q_target, axis=1)
-                    y_label = tf.where(done_batch, r_n_batch, r_n_batch + self.discount_factor * q_target_max)
+                    y_target = tf.where(done_batch, r_n_batch, r_n_batch + self.discount_factor * q_target_max)
 
-                    # Now, compute loss function and its gradient
-                    with tf.GradientTape() as tape:
-                        q_policy = tf.reduce_sum(self.q_policy(s_batch) * tf.one_hot(a_batch, env.action_space.n), 1)
-                        loss = tf.math.reduce_mean(tf.square(y_label - q_policy))
+                    # Train the model
+                    self.q_policy.train(y_target, s_batch, a_batch)
 
-                    # Update weights
-                    variables = self.q_policy.trainable_variables
-                    gradients = tape.gradient(loss, variables)
-                    self.optimizer.apply_gradients(zip(gradients, variables))
 
                 # Increment current state
                 s_curr = s_next
