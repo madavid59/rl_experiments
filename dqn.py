@@ -9,17 +9,17 @@ class QNetwork(tf.keras.Model):
     """ Deep Q-Network to represent Q-Function.
     Q(s) = {Q(s, a[0]), Q(s, a[1])}
     """
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gym.Env, lr=0.01):
         super(QNetwork, self).__init__()
         n_states = env.observation_space.shape
         self.l_in = layers.InputLayer(input_shape=(n_states))
 
         n_actions = env.action_space.n
-        self.l_h = [layers.Dense(20, activation='relu') for i in range(3)]
+        self.l_h = [layers.Dense(50, activation='relu') for i in range(5)]
 
         self.l_out = layers.Dense(n_actions, activation='linear')
 
-        self.optimizer = tf.optimizers.SGD(0.01)
+        self.optimizer = tf.optimizers.SGD(lr)
 
     @tf.function
     def call(self, inputs):
@@ -96,24 +96,24 @@ class DQNActor:
 
         # Exploration settings
         self.eps_high = 1.0
-        self.eps_low = 0.0
-        self.eps_decay = 0.001
+        self.eps_low = 0.00
+        self.eps_decay = 0.03
 
         # Sampling settings
-        self.n_episodes = 1000
+        self.n_episodes = 20000
         self.batch_size = 128
-        self.memory = Memory(100000)
+        self.memory = Memory(1000000)
 
         # Discount factor
         self.discount_factor = 0.99
 
         # Q-Function settings
-        self.copy_interval = 25
-        self.q_policy = QNetwork(env)
-        self.q_target = QNetwork(env)
+        self.copy_interval = 20 
+        self.q_policy = QNetwork(env, 0.005)
+        self.q_target = QNetwork(env, 0.005)
 
         # Visualization every x episodes
-        self.vis_interval = 100
+        self.vis_interval = 10
 
     def get_epsilon(self, k: int):
         """ Get current exploration coefficient.
@@ -124,7 +124,8 @@ class DQNActor:
         Returns:
             float: Epsilon for e_greedy action selection.
         """
-        coef = 1.0 / max(k - 50, 1.0)
+        #coef = 1.0 / max(k - 50, 1.0)
+        coef = np.math.exp(- self.eps_decay * k)
         return self.eps_low + (self.eps_high - self.eps_low) * coef
 
     def e_greedy(self, state: np.array, epsilon: float):
@@ -207,7 +208,6 @@ class DQNActor:
                     # Train the model
                     self.q_policy.train(y_target, s_batch, a_batch)
 
-
                 # Increment current state
                 s_curr = s_next
 
@@ -223,8 +223,9 @@ class DQNActor:
             self.update_plot(k, r_tot)
             
 if __name__=='__main__':
-    env = gym.make('CartPole-v0')
+    env = gym.make('Acrobot-v1')
     #env = gym.make('MountainCar-v0')
+    env = gym.make('CartPole-v0')
     actor = DQNActor(env)
     actor.train()
         
