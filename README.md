@@ -9,3 +9,11 @@ conda activate rl_playground
 python3 -m pip install -r requirements.txt
 
 ```
+
+# Algorithms
+# qlearning.py
+- Monte Carlo learning
+- SARSA(0)
+- Q(0) learning
+# dqn.py
+- DQN (Deep Q-Net)
