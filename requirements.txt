@@ -8,6 +8,7 @@ charset-normalizer==2.0.7
 click==7.1.2
 cloudpickle==2.0.0
 compdb==0.2.0
+cycler==0.10.0
 Cython==0.29.24
 distlib==0.3.2
 filelock==3.0.12
@@ -40,6 +41,7 @@ protobuf==3.19.0
 py==1.10.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pyglet==1.5.21
 pyparsing==2.4.7
 pytest==6.2.4
 python-dateutil==2.8.2

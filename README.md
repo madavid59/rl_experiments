@@ -1,8 +1,8 @@
 # Setup
-## Install tf with GPU support:
+## NVIDIA drivers for tf
 https://towardsdatascience.com/installing-tensorflow-gpu-in-ubuntu-20-04-4ee3ca4cb75d
 
-## Create virtual environment
+## Conda
 ```
 conda create --name rl_playground python=3.8
 conda activate rl_playground
